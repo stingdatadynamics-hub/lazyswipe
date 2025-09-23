@@ -175,9 +175,11 @@ function showProductDetailsModal(id) {
         }
     }
     const price = product.variations && product.variations.length > 0 ? product.variations[0].price : '';
-    // Determine initial modal image (first color image if available, else product.image)
+    // Determine initial modal image (first color image if available, else product.image, or for Crocs, first variation image)
     let initialModalImg = product.image;
-    if (product.colors && product.colors.length > 0 && product.colors[0].image) {
+    if (product.id === "12" && product.variations && product.variations[0].image) {
+        initialModalImg = product.variations[0].image;
+    } else if (product.colors && product.colors.length > 0 && product.colors[0].image) {
         initialModalImg = product.colors[0].image;
     }
     productModalContent.innerHTML = `

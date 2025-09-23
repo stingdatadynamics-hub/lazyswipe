@@ -158,12 +158,12 @@ const products = [
     },
     {
         id: "10",
-        name: "Leso (Wrap)",
+        name: "Cotton Leso (Wrap)",
         category: "fashion",
-        image: "images/leso1.jpg",
+        image: "images/cotton_leso.jpg",
         description: "Colorful traditional leso wraps.",
         variations: [
-            { price: 1300 }
+            { price: 1400 }
         ]
     },
     {
@@ -209,11 +209,12 @@ const products = [
         id: "12",
         name: "Crocs",
         category: "fashion",
-        image: "images/crocs.jpg",
+        image: "images/19-25_crocs.jpg",
         description: "Lightweight and comfy crocs.",
         variations: [
-            { type: "Type A", price: 700 },
-            { type: "Type B", price: 1200 }
+            { size: "19-25", price: 500, image: "images/19_25.jpg" },
+            { size: "25-35", price: 600, image: "images/25_35.jpg" },
+            { size: "36-45", price: 700, image: "images/36_45.jpg" }
         ]
     },
     {
@@ -302,6 +303,13 @@ function renderProductsGrouped() {
                     product.colors.map((c, i) => `<span class="color-option color-text${i === 0 ? ' selected' : ''}" data-img="${c.image || product.image}" data-color="${c.value || ''}" title="${c.name}" style="color:${c.value || 'inherit'};font-weight:bold;cursor:pointer;margin-right:10px;min-width:60px;">${c.name}</span>`).join('') +
                     `</div>`;
             }
+            let initialImg = product.image;
+            // If this is Crocs with size-based images, use the first variation's image
+            if (product.id === "12" && product.variations && product.variations[0].image) {
+                initialImg = product.variations[0].image;
+            } else if (product.colors && product.colors.length > 0 && product.colors[0].image) {
+                initialImg = product.colors[0].image;
+            }
             if (product.variations && product.variations.length > 1) {
                 const hasSize = product.variations.some(v => v.size);
                 const hasType = product.variations.some(v => v.type);
@@ -309,7 +317,7 @@ function renderProductsGrouped() {
                     variationHtml = `<div class="mb-3">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Size:</label>
                         <select class="size-selector w-full border rounded p-2 text-sm">
-                            ${product.variations.map((v, i) => `<option value="${v.size}" data-price="${v.price}" ${i === 0 ? 'selected' : ''}>${v.size} - KSh ${v.price}</option>`).join('')}
+                            ${product.variations.map((v, i) => `<option value="${v.size}" data-price="${v.price}" data-img="${v.image || initialImg}" ${i === 0 ? 'selected' : ''}>${v.size} - KSh ${v.price}</option>`).join('')}
                         </select>
                     </div>`;
                     variationData = 'size';
@@ -322,11 +330,6 @@ function renderProductsGrouped() {
                     </div>`;
                     variationData = 'type';
                 }
-            }
-            // Determine initial image for card (first color image if available, else product.image)
-            let initialImg = product.image;
-            if (product.colors && product.colors.length > 0 && product.colors[0].image) {
-                initialImg = product.colors[0].image;
             }
             return `
             <div class="product-card bg-white rounded-lg overflow-hidden shadow-md transition duration-300" data-category="${product.category}" data-id="${product.id}">
@@ -355,4 +358,22 @@ function renderProductsGrouped() {
     if (typeof attachProductEventListeners === "function") {
         attachProductEventListeners();
     }
+
+    // Add event listener for Crocs size image switching
+    setTimeout(() => {
+        document.querySelectorAll('.product-card[data-id="12"] .size-selector').forEach(sel => {
+            sel.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const img = this.closest('.product-card').querySelector('.product-img');
+                if (selectedOption && selectedOption.dataset.img) {
+                    img.src = selectedOption.dataset.img;
+                }
+                // Also update price
+                const priceSpan = this.closest('.product-card').querySelector('.product-price');
+                if (priceSpan && selectedOption.dataset.price) {
+                    priceSpan.textContent = 'KSh ' + selectedOption.dataset.price;
+                }
+            });
+        });
+    }, 100);
 }
