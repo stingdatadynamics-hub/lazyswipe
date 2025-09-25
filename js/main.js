@@ -1,4 +1,70 @@
 // DOM Elements
+const mpesaPayBtn = document.getElementById('mpesa-pay-btn');
+const mpesaPaymentStatus = document.getElementById('mpesa-payment-status');
+let paymentConfirmed = false;
+// Helper to get cart total
+function getCartTotal() {
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+}
+// M-Pesa Pay Button Logic
+if (mpesaPayBtn) {
+    mpesaPayBtn.addEventListener('click', async function() {
+        const contactInput = document.getElementById('cart-contact');
+        const contact = contactInput ? contactInput.value.trim() : '';
+        if (!contact) {
+            mpesaPaymentStatus.textContent = 'Please enter your phone number above.';
+            mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
+            contactInput && contactInput.classList.add('border-red-500');
+            return;
+        }
+        mpesaPayBtn.disabled = true;
+        mpesaPayBtn.textContent = 'Processing...';
+        mpesaPaymentStatus.textContent = '';
+        // Call your backend function for STK push
+        try {
+            const res = await fetch('/.netlify/functions/stkpush', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone: contact,
+                    amount: getCartTotal(),
+                    account_reference: 'EdmacOrder',
+                    transaction_desc: 'Order Payment'
+                })
+            });
+            const data = await res.json();
+            if (res.ok && data.CheckoutRequestID) {
+                mpesaPaymentStatus.textContent = 'STK Push sent! Please complete payment on your phone.';
+                mpesaPaymentStatus.className = 'text-green-700 text-sm mt-2 text-center';
+                // Poll for payment confirmation (simulate for demo)
+                pollPaymentStatus();
+            } else {
+                mpesaPaymentStatus.textContent = 'Failed to initiate payment. Try again.';
+                mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
+                mpesaPayBtn.disabled = false;
+                mpesaPayBtn.textContent = 'Pay Now with M-Pesa';
+            }
+        } catch (err) {
+            mpesaPaymentStatus.textContent = 'Error connecting to payment server.';
+            mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
+            mpesaPayBtn.disabled = false;
+            mpesaPayBtn.textContent = 'Pay Now with M-Pesa';
+        }
+    });
+}
+
+// Simulate polling for payment confirmation (replace with real logic in production)
+function pollPaymentStatus() {
+    // In production, poll your backend or listen for callback
+    setTimeout(() => {
+        paymentConfirmed = true;
+        checkoutBtn.disabled = false;
+        mpesaPaymentStatus.textContent = 'Payment confirmed! You can now checkout.';
+        mpesaPaymentStatus.className = 'text-green-700 text-sm mt-2 text-center';
+        mpesaPayBtn.disabled = true;
+        mpesaPayBtn.textContent = 'Payment Complete';
+    }, 8000); // Simulate 8s wait
+}
 const cartBtn = document.getElementById('cart-btn');
 const closeCartBtn = document.getElementById('close-cart');
 const cartSidebar = document.getElementById('cart-sidebar');
@@ -395,6 +461,10 @@ closePhonePanelBtn.addEventListener('click', function() {
 
 // Checkout via WhatsApp
 checkoutBtn.addEventListener('click', function() {
+    if (!paymentConfirmed) {
+        alert('Please pay via M-Pesa first.');
+        return;
+    }
     const nameInput = document.getElementById('cart-name');
     const locationInput = document.getElementById('cart-location');
     const contactInput = document.getElementById('cart-contact');
