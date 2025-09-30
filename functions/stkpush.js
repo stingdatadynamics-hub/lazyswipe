@@ -8,6 +8,16 @@ exports.handler = async (event, context) => {
   const passkey = process.env.MPESA_PASSKEY;  // Passkey for STK push (use environment variable for this)
   const phone = event.body.phone;  // Customer's phone number
 
+  // Convert phone number to international format if necessary
+  function convertToInternationalFormat(localNumber) {
+    if (localNumber.startsWith('07')) {
+      return '+254' + localNumber.substring(1);
+    }
+    return localNumber;
+  }
+
+  const internationalPhone = convertToInternationalFormat(phone);
+
   // Step 1: Get access token from Safaricom
   const auth = Buffer.from(`${consumerKey}:${consumerSecret}`).toString("base64");
   const tokenRes = await fetch("https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials", {
@@ -37,9 +47,9 @@ exports.handler = async (event, context) => {
       Timestamp: timestamp,
       TransactionType: "CustomerPayBillOnline",
       Amount: event.body.amount,  // Amount to be paid (dynamic)
-      PartyA: phone,  // Customer's phone number
+      PartyA: internationalPhone,  // Customer's phone number in international format
       PartyB: shortcode,  // Your shortcode
-      PhoneNumber: phone,  // Customer's phone number
+      PhoneNumber: internationalPhone,  // Customer's phone number in international format
       CallBackURL: "https://68d4e0ef8ccd4db2613d3ff3--heartfelt-marigold-32bb39.netlify.app/.netlify/functions/callback",  // Callback URL to your Netlify function
       AccountReference: event.body.account_reference || "Test123",  // Dynamic reference
       TransactionDesc: event.body.transaction_desc || "Payment Test"  // Dynamic description

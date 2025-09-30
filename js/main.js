@@ -6,57 +6,66 @@ let paymentConfirmed = false;
 function getCartTotal() {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 }
+// Convert local phone number (e.g., 0712345678) to international format (+254712345678)
+function convertToInternationalFormat(localNumber) {
+   if (localNumber.startsWith('07')) {
+       return '+254' + localNumber.substring(1);  // Remove the '0' and add '+254'
+   }
+   // If the number is already in international format, return it as is
+   return localNumber;
+}
+
 // M-Pesa Pay Button Logic
 if (mpesaPayBtn) {
     mpesaPayBtn.addEventListener('click', async function() {
         const contactInput = document.getElementById('cart-contact');
-        const contact = contactInput ? contactInput.value.trim() : '';
+        const contact = contactInput ? convertToInternationalFormat(contactInput.value.trim()) : '';
 
-        if (!contact) {
-            mpesaPaymentStatus.textContent = 'Please enter your phone number above.';
-            mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
-            contactInput && contactInput.classList.add('border-red-500');
-            return;
-        }
+        // Check if the formatted phone number is valid (length should be 13: +254 followed by 9 digits)
+        if (contact.length === 13 && contact.startsWith('+254')) {
+           mpesaPayBtn.disabled = true;
+           mpesaPayBtn.textContent = 'Processing...';
+           if (mpesaPaymentStatus) mpesaPaymentStatus.textContent = '';
 
-        mpesaPayBtn.disabled = true;
-        mpesaPayBtn.textContent = 'Processing...';
-        mpesaPaymentStatus.textContent = '';
+           try {
+               const response = await fetch('/.netlify/functions/stkpush', {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify({
+                       phone: contact,  // Send the correctly formatted phone number
+                       amount: getCartTotal(),  // Send the total amount
+                       account_reference: 'EdmacOrder',  // Example reference
+                       transaction_desc: 'Order Payment'  // Description for payment
+                   })
+               });
 
-        // Call your backend function for STK push
-        try {
-            const res = await fetch('/.netlify/functions/stkpush', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone: contact,
-                    amount: getCartTotal(),
-                    account_reference: 'EdmacOrder',
-                    transaction_desc: 'Order Payment'
-                })
-            });
+               const data = await response.json();
 
-            const data = await res.json();
-
-            if (res.ok && data.CheckoutRequestID) {
-                mpesaPaymentStatus.textContent = 'STK Push sent! Please complete payment on your phone.';
-                mpesaPaymentStatus.className = 'text-green-700 text-sm mt-2 text-center';
-
-                // Poll for payment confirmation (simulate for demo)
-                pollPaymentStatus();
-            } else {
-                mpesaPaymentStatus.textContent = 'Failed to initiate payment. Try again.';
-                mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
-                mpesaPayBtn.disabled = false;
-                mpesaPayBtn.textContent = 'Pay Now with M-Pesa';
-            }
-
-        } catch (err) {
-            console.error("Error details:", err);  // Log the actual error
-            mpesaPaymentStatus.textContent = 'Error connecting to payment server.';
-            mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
-            mpesaPayBtn.disabled = false;
-            mpesaPayBtn.textContent = 'Pay Now with M-Pesa';
+               if (response.ok && data.CheckoutRequestID) {
+                   if (mpesaPaymentStatus) {
+                       mpesaPaymentStatus.textContent = 'STK Push sent! Please complete payment on your phone.';
+                       mpesaPaymentStatus.className = 'text-green-700 text-sm mt-2 text-center';
+                   }
+                   pollPaymentStatus();
+               } else {
+                   if (mpesaPaymentStatus) {
+                       mpesaPaymentStatus.textContent = 'Failed to initiate payment. Try again.';
+                       mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
+                   }
+                   mpesaPayBtn.disabled = false;
+                   mpesaPayBtn.textContent = 'Pay Now with M-Pesa';
+               }
+           } catch (err) {
+               console.error("Error details:", err);  // Log the actual error
+               if (mpesaPaymentStatus) {
+                   mpesaPaymentStatus.textContent = 'Error connecting to payment server.';
+                   mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
+               }
+               mpesaPayBtn.disabled = false;
+               mpesaPayBtn.textContent = 'Pay Now with M-Pesa';
+           }
+        } else {
+           alert("Please enter a valid phone number.");
         }
     });
 }
@@ -199,8 +208,14 @@ function addToCart(product, variation, btn) {
     }
 
     updateCartUI();
-    saveCart();
     showAddToCartFeedback(btn);
+}
+// Helper to convert local phone number to international format
+function convertToInternationalFormat(localNumber) {
+    if (localNumber.startsWith('07')) {
+        return '+254' + localNumber.substring(1);
+    }
+    return localNumber;
 }
 
 function showAddToCartFeedback(button) {
