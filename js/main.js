@@ -11,15 +11,18 @@ if (mpesaPayBtn) {
     mpesaPayBtn.addEventListener('click', async function() {
         const contactInput = document.getElementById('cart-contact');
         const contact = contactInput ? contactInput.value.trim() : '';
+
         if (!contact) {
             mpesaPaymentStatus.textContent = 'Please enter your phone number above.';
             mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
             contactInput && contactInput.classList.add('border-red-500');
             return;
         }
+
         mpesaPayBtn.disabled = true;
         mpesaPayBtn.textContent = 'Processing...';
         mpesaPaymentStatus.textContent = '';
+
         // Call your backend function for STK push
         try {
             const res = await fetch('/.netlify/functions/stkpush', {
@@ -32,10 +35,13 @@ if (mpesaPayBtn) {
                     transaction_desc: 'Order Payment'
                 })
             });
+
             const data = await res.json();
+
             if (res.ok && data.CheckoutRequestID) {
                 mpesaPaymentStatus.textContent = 'STK Push sent! Please complete payment on your phone.';
                 mpesaPaymentStatus.className = 'text-green-700 text-sm mt-2 text-center';
+
                 // Poll for payment confirmation (simulate for demo)
                 pollPaymentStatus();
             } else {
@@ -44,7 +50,9 @@ if (mpesaPayBtn) {
                 mpesaPayBtn.disabled = false;
                 mpesaPayBtn.textContent = 'Pay Now with M-Pesa';
             }
+
         } catch (err) {
+            console.error("Error details:", err);  // Log the actual error
             mpesaPaymentStatus.textContent = 'Error connecting to payment server.';
             mpesaPaymentStatus.className = 'text-red-600 text-sm mt-2 text-center';
             mpesaPayBtn.disabled = false;
@@ -55,7 +63,6 @@ if (mpesaPayBtn) {
 
 // Simulate polling for payment confirmation (replace with real logic in production)
 function pollPaymentStatus() {
-    // In production, poll your backend or listen for callback
     setTimeout(() => {
         paymentConfirmed = true;
         checkoutBtn.disabled = false;
@@ -65,6 +72,7 @@ function pollPaymentStatus() {
         mpesaPayBtn.textContent = 'Payment Complete';
     }, 8000); // Simulate 8s wait
 }
+
 const cartBtn = document.getElementById('cart-btn');
 const closeCartBtn = document.getElementById('close-cart');
 const cartSidebar = document.getElementById('cart-sidebar');

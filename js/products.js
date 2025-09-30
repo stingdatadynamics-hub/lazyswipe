@@ -131,11 +131,11 @@ const products = [
         id: "9",
         name: "Dera (Free size)",
         category: "fashion",
-        image: "images/dera_orange.jpg",
+        image: "images/dera_orange.png",
         description: "Comfortable traditional dress.",
         colors: [
-            { name: "Orange", value: "#FFA500", image: "images/dera_orange.jpg" },
-            { name: "Yellow", value: "#FFFF00", image: "images/dera_yellow.jpg" }
+            { name: "Orange", value: "#FFA500", image: "images/dera_orange.png" },
+            { name: "Yellow", value: "#FFFF00", image: "images/dera_yellow.png" }
         ],
         variations: [
             { price: 800 }
@@ -145,12 +145,12 @@ const products = [
         id: "17",
         name: "Top Quality Dera with Scarf",
         category: "fashion",
-        image: "images/top_dera_brown.jpg",
+        image: "images/top_dera_brown.png",
         description: "Top quality dera with matching scarf.",
         colors: [
-            { name: "Brown", value: "#8B5C2A", image: "images/top_dera_brown.jpg" },
-            { name: "Green", value: "#22C55E", image: "images/top_dera_green.jpg" },
-            { name: "Blue", value: "#3B82F6", image: "images/top_dera_blue.jpg" }
+            { name: "Brown", value: "#8B5C2A", image: "images/top_dera_brown.png" },
+            { name: "Green", value: "#22C55E", image: "images/top_dera_green.png" },
+            { name: "Blue", value: "#3B82F6", image: "images/top_dera_blue.png" }
         ],
         variations: [
             { price: 1600 }
@@ -213,7 +213,7 @@ const products = [
         description: "Lightweight and comfy crocs.",
         variations: [
             { size: "19-25", price: 500, image: "images/19_25.jpg" },
-            { size: "25-35", price: 600, image: "images/25_35.jpg" },
+            { size: "26-35", price: 600, image: "images/25_35.jpg" },
             { size: "36-45", price: 700, image: "images/36_45.jpg" }
         ]
     },

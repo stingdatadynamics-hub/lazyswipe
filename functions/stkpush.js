@@ -13,7 +13,11 @@ exports.handler = async (event, context) => {
   const tokenRes = await fetch("https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials", {
     headers: { Authorization: `Basic ${auth}` }
   });
+
+  // Log token response for debugging
   const tokenData = await tokenRes.json();
+  console.log('Token response:', tokenData);  // Log token response
+
   const access_token = tokenData.access_token;
 
   // Step 2: Prepare the STK Push request
@@ -44,16 +48,38 @@ exports.handler = async (event, context) => {
 
   const stkData = await stkRes.json();
 
+  // Log Safaricom response for debugging
+  console.log('Safaricom STK Push response:', stkData);  // Log Safaricom response
+
+  // CORS headers
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",  // Allow all origins (or restrict for security)
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+  };
+
+  // Handle preflight OPTIONS request
+  if (event.httpMethod === "OPTIONS") {
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: ""
+    };
+  }
+
   // Check if STK Push request was successful
   if (!stkRes.ok) {
+    console.error("Error details:", stkData);  // Log the error from Safaricom API
     return {
       statusCode: 500,
+      headers: corsHeaders,
       body: JSON.stringify({ error: "Failed to process STK push", details: stkData })
     };
   }
 
   return {
     statusCode: 200,
+    headers: corsHeaders,
     body: JSON.stringify(stkData)
   };
 };
