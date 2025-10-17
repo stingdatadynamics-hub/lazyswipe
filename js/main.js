@@ -70,16 +70,9 @@ if (mpesaPayBtn) {
     });
 }
 
-// Simulate polling for payment confirmation (replace with real logic in production)
+// Payment polling removed — checkout no longer depends on M-Pesa payment
 function pollPaymentStatus() {
-    setTimeout(() => {
-        paymentConfirmed = true;
-        checkoutBtn.disabled = false;
-        mpesaPaymentStatus.textContent = 'Payment confirmed! You can now checkout.';
-        mpesaPaymentStatus.className = 'text-green-700 text-sm mt-2 text-center';
-        mpesaPayBtn.disabled = true;
-        mpesaPayBtn.textContent = 'Payment Complete';
-    }, 8000); // Simulate 8s wait
+    // no-op
 }
 
 const cartBtn = document.getElementById('cart-btn');
@@ -484,10 +477,6 @@ closePhonePanelBtn.addEventListener('click', function() {
 
 // Checkout via WhatsApp
 checkoutBtn.addEventListener('click', function() {
-    if (!paymentConfirmed) {
-        alert('Please pay via M-Pesa first.');
-        return;
-    }
     const nameInput = document.getElementById('cart-name');
     const locationInput = document.getElementById('cart-location');
     const contactInput = document.getElementById('cart-contact');
@@ -495,9 +484,37 @@ checkoutBtn.addEventListener('click', function() {
     const locationError = document.getElementById('cart-location-error');
     const contactError = document.getElementById('cart-contact-error');
 
-    const name = nameInput.value.trim();
-    const location = locationInput.value.trim();
-    const contact = contactInput.value.trim();
+    // Sanitize inputs
+    function sanitizeInput(str) {
+        return String(str || '').replace(/\s+/g, ' ').trim();
+    }
+
+    function normalizeKenyanPhone(input) {
+        if (!input) return null;
+        let s = String(input).replace(/[^0-9+]/g, ''); // remove spaces, dashes, parentheses
+        // Examples accepted: 0712345678, +254712345678, 254712345678, 712345678
+        if (s.startsWith('+')) {
+            // +254712345678
+            if (s.startsWith('+254') && s.length === 13) return s;
+            return null;
+        }
+        if (s.startsWith('0') && s.length === 10) {
+            // 0712345678 -> +254712345678
+            return '+254' + s.substring(1);
+        }
+        if (s.length === 12 && s.startsWith('254')) {
+            return '+' + s;
+        }
+        if (s.length === 9 && s.startsWith('7')) {
+            return '+254' + s;
+        }
+        return null;
+    }
+
+    const name = sanitizeInput(nameInput.value);
+    const location = sanitizeInput(locationInput.value);
+    const contactRaw = sanitizeInput(contactInput.value);
+    const contact = normalizeKenyanPhone(contactRaw);
 
     // Reset input borders and error messages
     nameInput.classList.remove('border-red-500');
@@ -532,6 +549,7 @@ checkoutBtn.addEventListener('click', function() {
         return;
     }
 
+    // Build sanitized WhatsApp message (use contact in normalized international format)
     let message = '';
     if (name !== '') {
         message += `Hello, my name is ${name}.%0A`;
@@ -539,7 +557,7 @@ checkoutBtn.addEventListener('click', function() {
     message += `*NEW ORDER FROM EDMAC CREATIONS WEBSITE*\n\n`;
     message += `*Customer Details:*\n`;
     message += `📍 Location: ${location}\n`;
-    message += `📞 Contact: ${contact}\n\n`;
+    message += `📞 Contact: ${contact || contactRaw}\n\n`;
     message += `*Order Items:*\n`;
     cart.forEach(item => {
         message += `➡️ ${item.name}`;
@@ -549,7 +567,8 @@ checkoutBtn.addEventListener('click', function() {
     });
     message += `\n*Order Total:* KSh ${cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)}`;
     const phone = '+254104988770';
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+    // Use normalizeKenyanPhone to ensure contact is valid; phone variable is the business WhatsApp number
+    window.open(`https://wa.me/${phone.replace(/[^0-9]/g,'') }?text=${encodeURIComponent(message)}`, '_blank');
 });
 continueShoppingBtn.addEventListener('click', toggleCart);
 
